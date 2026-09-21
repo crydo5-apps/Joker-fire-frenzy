@@ -1,4 +1,4 @@
- import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   START_BALANCE,
   SPIN_DURATION,
@@ -63,6 +63,7 @@ export function useSlotGame() {
         return nb;
       });
     }
+
     setLastWin(0);
     setWinInfo(null);
 

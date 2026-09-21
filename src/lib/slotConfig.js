@@ -32,8 +32,6 @@ export const REEL_COUNT = 3;
 export const ROW_COUNT = 3;
 export const SPIN_DURATION = 1600; // ms bis alle Walzen stehen
 export const REEL_DELAYS = [800, 1150, 1500]; // Stopp-Zeiten pro Walzel
-export const SPIN_DURATION = 1600;
-export const REEL_DELAYS = [800, 1150, 1500];
 export const SPIN_DURATION_TURBO = 650;
 export const REEL_DELAYS_TURBO = [300, 450, 600];
 

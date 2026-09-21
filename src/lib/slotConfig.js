@@ -61,7 +61,7 @@ export function emptyGrid() {
   );
 }
 
-// Mittlere Payline auswerten (mit Joker als Wild)
+// Einzelne Payline auswerten (mit Joker als Wild)
 export function evaluateLine(line) {
   const nonWild = line.filter((s) => !s.wild);
   if (nonWild.length === 0) {
@@ -71,4 +71,37 @@ export function evaluateLine(line) {
   const allSame = nonWild.every((s) => s.id === first.id);
   if (allSame) return { win: true, symbol: first, count: 3, name: first.label };
   return { win: false };
+}
+
+// ✨ NEUE FUNKTION: Alle 3 Gewinnlinien auswerten (oben, mitte, unten)
+export function evaluateAllLines(grid) {
+  const lines = [
+    { lineIndex: 0, name: '🔝 TOP LINE', cells: [grid[0][0], grid[1][0], grid[2][0]] },      // OBERE Linie (row 0)
+    { lineIndex: 1, name: '⏸️ MID LINE', cells: [grid[0][1], grid[1][1], grid[2][1]] },       // MITTLERE Linie (row 1)
+    { lineIndex: 2, name: '🔽 BOTTOM LINE', cells: [grid[0][2], grid[1][2], grid[2][2]] }    // UNTERE Linie (row 2)
+  ];
+
+  const winningLines = [];
+  let totalWin = 0;
+  let hasWildWin = false;
+
+  for (const { lineIndex, name, cells } of lines) {
+    const result = evaluateLine(cells);
+    if (result.win) {
+      winningLines.push({
+        lineIndex,
+        name,
+        ...result
+      });
+      totalWin += result.symbol.payout;
+      if (result.symbol.wild) hasWildWin = true;
+    }
+  }
+
+  return {
+    winningLines,
+    totalMultiplier: totalWin,
+    hasWildWin,
+    win: winningLines.length > 0
+  };
 }

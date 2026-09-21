@@ -3,7 +3,6 @@ import { Image } from '@/components/ui/image';
 import { SPIN_BLUR_IMAGE } from '@/lib/slotConfig';
 
 export default function SymbolCell({ symbol, highlight, useIcon }) {
-  // Während dem Drehen: immer das Spin-Symbol
   const showSpinImage = useIcon && SPIN_BLUR_IMAGE;
   const showSymbolImage = !useIcon && symbol.image;
 

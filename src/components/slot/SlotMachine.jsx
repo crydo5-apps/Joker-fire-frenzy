@@ -226,7 +226,35 @@ export default function SlotMachine() {
           )}
         </AnimatePresence>
       </div>
+{/* Turbo + Auto */}
+<div className="flex items-center gap-2">
+  <button
+    onClick={toggleTurbo}
+    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
+      turbo
+        ? 'text-black shadow-[0_0_14px_#ffb347]'
+        : 'bg-black/40 text-amber-200/70 hover:bg-black/60'
+    }`}
+    style={turbo ? { background: 'linear-gradient(90deg, #ffb347, #ff5a1f)' } : undefined}
+  >
+    <Gauge className="h-3.5 w-3.5" />
+    TURBO {turbo ? 'AN' : 'AUS'}
+  </button>
 
+  <button
+    onClick={toggleAutoPlay}
+    disabled={!autoPlay && (spinning || balance < bet)}
+    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all disabled:opacity-40 ${
+      autoPlay
+        ? 'text-black shadow-[0_0_14px_#34d399]'
+        : 'bg-black/40 text-amber-200/70 hover:bg-black/60'
+    }`}
+    style={autoPlay ? { background: 'linear-gradient(90deg, #34d399, #10b981)' } : undefined}
+  >
+    {autoPlay ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+    {autoPlay ? 'STOP' : 'AUTO'}
+  </button>
+</div>
       {/* Einsatz + Spin */}
       <div className="mt-6 flex w-full flex-col items-center gap-4">
         <div className="flex items-center gap-2">

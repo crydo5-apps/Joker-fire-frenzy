@@ -54,26 +54,4 @@ export default function Reel({ spinning, finalSymbols, delay, highlightRows = []
       ))}
     </div>
   );
-}        background: 'linear-gradient(180deg, rgba(0,0,0,0.55), rgba(30,10,4,0.55))',
-        boxShadow: 'inset 0 0 30px rgba(0,0,0,0.7)',
-      }}
-    >
-      {display.map((sym, row) => (
-        <div
-          key={row}
-          className="transition-all"
-          style={{
-            filter: spinning ? 'blur(1.5px)' : 'none',
-            opacity: spinning ? 0.85 : 1,
-          }}
-        >
-          <SymbolCell
-            symbol={sym}
-            highlight={!spinning && highlightSet.has(row)}
-            useIcon={spinning}
-          />
-        </div>
-      ))}
-    </div>
-  );
 }

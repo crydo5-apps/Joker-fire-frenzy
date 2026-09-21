@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  BET_OPTIONS,
   START_BALANCE,
   SPIN_DURATION,
+  SPIN_DURATION_TURBO,
   makeGrid,
   emptyGrid,
   evaluateAllPaylines,
@@ -37,13 +37,22 @@ export function useSlotGame() {
   const [stats, setStats] = useState(loadStats);
   const [freeSpins, setFreeSpins] = useState(0);
   const [freeSpinsAwarded, setFreeSpinsAwarded] = useState(0);
+  const [turbo, setTurbo] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(false);
+
+  const turboRef = useRef(turbo);
+  turboRef.current = turbo;
 
   const persist = (b) => localStorage.setItem(STORAGE_KEY, String(b));
+  const persistStats = (s) => localStorage.setItem(STATS_KEY, JSON.stringify(s));
 
   const spin = useCallback(() => {
     const inFreeSpins = freeSpins > 0;
     if (spinning) return;
-    if (!inFreeSpins && balance < bet) return;
+    if (!inFreeSpins && balance < bet) {
+      setAutoPlay(false);
+      return;
+    }
 
     if (inFreeSpins) {
       setFreeSpins((f) => f - 1);
@@ -60,17 +69,21 @@ export function useSlotGame() {
     const newGrid = makeGrid();
     setGrid(newGrid);
     setSpinning(true);
-    setStats((s) => ({ ...s, spins: s.spins + 1 }));
+    setStats((s) => {
+      const next = { ...s, spins: s.spins + 1 };
+      persistStats(next);
+      return next;
+    });
+
+    const duration = turboRef.current ? SPIN_DURATION_TURBO : SPIN_DURATION;
 
     setTimeout(() => {
       setSpinning(false);
 
-      // ✨ ALLE 5 PAYLINES PRÜFEN!
       const allPaylineResults = evaluateAllPaylines(newGrid);
 
       if (allPaylineResults.win) {
         const mult = inFreeSpins ? FREE_SPINS_MULTIPLIER : 1;
-        // Gewinne von ALLEN gewonnenen Paylines addieren!
         const amount = bet * allPaylineResults.totalMultiplier * mult;
 
         setLastWin(amount);
@@ -88,39 +101,57 @@ export function useSlotGame() {
           return nb;
         });
 
-        setStats((s) => ({
-          spins: s.spins + 1,
-          totalWon: s.totalWon + amount,
-          biggest: Math.max(s.biggest, amount),
-        }));
+        setStats((s) => {
+          const next = {
+            ...s,
+            totalWon: s.totalWon + amount,
+            biggest: Math.max(s.biggest, amount),
+          };
+          persistStats(next);
+          return next;
+        });
 
-        // Wenn EINE BELIEBIGE Payline 3 Joker hat, lösen Freispiele aus
         if (allPaylineResults.hasWildWin) {
           setFreeSpins((f) => f + FREE_SPINS_AWARD);
           setFreeSpinsAwarded(FREE_SPINS_AWARD);
         }
       }
-    }, SPIN_DURATION);
+    }, duration);
   }, [spinning, balance, bet, freeSpins]);
 
-  // Freispiele automatisch abspielen
+  // Freispiele automatisch
   useEffect(() => {
     if (freeSpins > 0 && !spinning) {
-      const t = setTimeout(() => spin(), 900);
+      const delay = turboRef.current ? 250 : 900;
+      const t = setTimeout(() => spin(), delay);
       return () => clearTimeout(t);
     }
   }, [freeSpins, spinning, spin]);
 
+  // Auto-Play
+  useEffect(() => {
+    if (!autoPlay || spinning || freeSpins > 0) return;
+    if (balance < bet) {
+      setAutoPlay(false);
+      return;
+    }
+    const delay = turbo ? 200 : 600;
+    const t = setTimeout(() => spin(), delay);
+    return () => clearTimeout(t);
+  }, [autoPlay, spinning, freeSpins, balance, bet, turbo, spin]);
+
   const changeBet = useCallback(
     (value) => {
-      if (!spinning && freeSpins === 0) setBet(value);
+      if (!spinning && freeSpins === 0 && !autoPlay) setBet(value);
     },
-    [spinning, freeSpins]
+    [spinning, freeSpins, autoPlay]
   );
 
-  // Freispiele direkt kaufen (Buy Feature)
+  const toggleTurbo = useCallback(() => setTurbo((v) => !v), []);
+  const toggleAutoPlay = useCallback(() => setAutoPlay((v) => !v), []);
+
   const buyFreeSpins = useCallback(() => {
-    if (spinning || freeSpins > 0) return;
+    if (spinning || freeSpins > 0 || autoPlay) return;
     const cost = bet * BUY_FEATURE_MULTIPLIER;
     if (balance < cost) return;
     setBalance((b) => {
@@ -130,7 +161,7 @@ export function useSlotGame() {
     });
     setFreeSpins(FREE_SPINS_AWARD);
     setFreeSpinsAwarded(FREE_SPINS_AWARD);
-  }, [spinning, freeSpins, bet, balance]);
+  }, [spinning, freeSpins, autoPlay, bet, balance]);
 
   const resetBalance = useCallback(() => {
     setBalance(START_BALANCE);
@@ -138,6 +169,7 @@ export function useSlotGame() {
     setLastWin(0);
     setWinInfo(null);
     setFreeSpins(0);
+    setAutoPlay(false);
   }, []);
 
   return {
@@ -154,5 +186,9 @@ export function useSlotGame() {
     freeSpins,
     freeSpinsAwarded,
     buyFreeSpins,
+    turbo,
+    toggleTurbo,
+    autoPlay,
+    toggleAutoPlay,
   };
 }

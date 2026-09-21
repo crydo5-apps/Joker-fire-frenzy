@@ -3,6 +3,8 @@
 
 const IMG = 'https://media.base44.com/images/public/6a95e6def874ab66190e3067';
 
+// Bild während dem Walzen-Drehen (für ALLE Zellen)
+export const SPIN_BLUR_IMAGE = `${IMG}/4a12649ae_file_1789810352705.png`;
 export const SYMBOLS = [
   { id: 'joker',  label: 'JOKER',  icon: '🃏', color: '#ff2d2d', glow: '#ff5a3c', weight: 1,  payout: 100, wild: true,
     image: `${IMG}/bf8c463c9_grok_image_1789987816160.jpg` },

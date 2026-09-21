@@ -1,4 +1,5 @@
 // Joker Fire Frenzy — Symboldefinitionen, Gewinntabelle und Spiellogik
+// ✨ MIT 5 KLASSISCHEN PAYLINES (gerade + Diagonalen)
 
 const IMG = 'https://media.base44.com/images/public/6a95e6def874ab66190e3067';
 
@@ -31,6 +32,40 @@ export const REEL_COUNT = 3;
 export const ROW_COUNT = 3;
 export const SPIN_DURATION = 1600; // ms bis alle Walzen stehen
 export const REEL_DELAYS = [800, 1150, 1500]; // Stopp-Zeiten pro Walzel
+
+// 🎰 DIE 5 PAYLINES
+export const PAYLINES = [
+  {
+    id: 1,
+    name: '🔝 TOP LINE',
+    icon: '—',
+    cells: [[0, 0], [1, 0], [2, 0]] // Obere Reihe gerade
+  },
+  {
+    id: 2,
+    name: '⏸️ CENTER LINE',
+    icon: '—',
+    cells: [[0, 1], [1, 1], [2, 1]] // Mittlere Reihe gerade
+  },
+  {
+    id: 3,
+    name: '🔽 BOTTOM LINE',
+    icon: '—',
+    cells: [[0, 2], [1, 2], [2, 2]] // Untere Reihe gerade
+  },
+  {
+    id: 4,
+    name: '↘️ DIAGONAL DOWN',
+    icon: '\\',
+    cells: [[0, 0], [1, 1], [2, 2]] // Von oben-links nach unten-rechts
+  },
+  {
+    id: 5,
+    name: '↗️ DIAGONAL UP',
+    icon: '/',
+    cells: [[0, 2], [1, 1], [2, 0]] // Von unten-links nach oben-rechts
+  }
+];
 
 const TOTAL_WEIGHT = SYMBOLS.reduce((s, x) => s + x.weight, 0);
 
@@ -73,24 +108,24 @@ export function evaluateLine(line) {
   return { win: false };
 }
 
-// ✨ NEUE FUNKTION: Alle 3 Gewinnlinien auswerten (oben, mitte, unten)
-export function evaluateAllLines(grid) {
-  const lines = [
-    { lineIndex: 0, name: '🔝 TOP LINE', cells: [grid[0][0], grid[1][0], grid[2][0]] },      // OBERE Linie (row 0)
-    { lineIndex: 1, name: '⏸️ MID LINE', cells: [grid[0][1], grid[1][1], grid[2][1]] },       // MITTLERE Linie (row 1)
-    { lineIndex: 2, name: '🔽 BOTTOM LINE', cells: [grid[0][2], grid[1][2], grid[2][2]] }    // UNTERE Linie (row 2)
-  ];
-
+// ✨ NEUE FUNKTION: Alle 5 PAYLINES auswerten (3 gerade + 2 Diagonalen)
+export function evaluateAllPaylines(grid) {
   const winningLines = [];
   let totalWin = 0;
   let hasWildWin = false;
 
-  for (const { lineIndex, name, cells } of lines) {
-    const result = evaluateLine(cells);
+  for (const payline of PAYLINES) {
+    // Symbole der aktuellen Payline extrahieren
+    const symbols = payline.cells.map(([reel, row]) => grid[reel][row]);
+    
+    // Diese Payline auswerten
+    const result = evaluateLine(symbols);
+    
     if (result.win) {
       winningLines.push({
-        lineIndex,
-        name,
+        paylineId: payline.id,
+        paylineName: payline.name,
+        paylineIcon: payline.icon,
         ...result
       });
       totalWin += result.symbol.payout;
@@ -102,6 +137,7 @@ export function evaluateAllLines(grid) {
     winningLines,
     totalMultiplier: totalWin,
     hasWildWin,
-    win: winningLines.length > 0
+    win: winningLines.length > 0,
+    totalPaylines: PAYLINES.length
   };
 }

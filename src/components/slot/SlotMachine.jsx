@@ -342,4 +342,4 @@ function Stat({ icon, label, value }) {
       <div className="text-sm font-black text-amber-200">{value}</div>
     </div>
   );
-}                                                                    }
+}

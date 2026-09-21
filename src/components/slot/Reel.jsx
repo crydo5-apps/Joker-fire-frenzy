@@ -3,10 +3,13 @@ import { SYMBOLS } from '@/lib/slotConfig';
 import SymbolCell from './SymbolCell';
 
 // Eine Walze: scrollt schnell durch und stoppt nach `delay` auf `finalSymbols`
-export default function Reel({ spinning, finalSymbols, delay, winRow }) {
+// highlightRows = Set/Array der Zeilen-Indizes (0,1,2), die leuchten sollen
+export default function Reel({ spinning, finalSymbols, delay, highlightRows = [] }) {
   const [display, setDisplay] = useState(finalSymbols);
   const cycleRef = useRef(null);
   const stopRef = useRef(null);
+
+  const highlightSet = new Set(highlightRows);
 
   useEffect(() => {
     if (spinning) {
@@ -44,7 +47,11 @@ export default function Reel({ spinning, finalSymbols, delay, winRow }) {
             opacity: spinning ? 0.85 : 1,
           }}
         >
-          <SymbolCell symbol={sym} highlight={!spinning && winRow === row} useIcon={spinning} />
+          <SymbolCell
+            symbol={sym}
+            highlight={!spinning && highlightSet.has(row)}
+            useIcon={spinning}
+          />
         </div>
       ))}
     </div>

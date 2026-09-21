@@ -13,10 +13,19 @@ import {
 import Reel from './Reel';
 import Paytable from './Paytable';
 
+// Position der Zellen im SVG (Prozent, 3x3 Grid)
+// x: Mitte der 3 Walzen, y: Mitte der 3 Zeilen
+const CELL_POS = {
+  // [reel][row] -> { x, y } in %
+  0: { 0: { x: 16.5, y: 18 }, 1: { x: 16.5, y: 50 }, 2: { x: 16.5, y: 82 } },
+  1: { 0: { x: 50,   y: 18 }, 1: { x: 50,   y: 50 }, 2: { x: 50,   y: 82 } },
+  2: { 0: { x: 83.5, y: 18 }, 1: { x: 83.5, y: 50 }, 2: { x: 83.5, y: 82 } },
+};
+
 export default function SlotMachine() {
   const {
     balance, bet, changeBet, grid, spinning, lastWin, winInfo, stats, spin, resetBalance,
-    freeSpins, freeSpinsAwarded, buyFreeSpins,
+    freeSpins, buyFreeSpins,
   } = useSlotGame();
   const [showPaytable, setShowPaytable] = useState(false);
   const inFreeSpins = freeSpins > 0;
@@ -25,11 +34,10 @@ export default function SlotMachine() {
   const buyCost = bet * BUY_FEATURE_MULTIPLIER;
   const canBuy = !spinning && !inFreeSpins && balance >= buyCost;
 
-  // ✨ Highlight-Map: für jede Walze die gewonnenen Zeilen-Indizes
+  // Welche Zeilen pro Walze highlighten
   const highlightByReel = useMemo(() => {
-    const map = [[], [], []]; // reel 0, 1, 2
+    const map = [[], [], []];
     if (!winInfo?.winningLines?.length) return map;
-
     for (const line of winInfo.winningLines) {
       const payline = PAYLINES.find((p) => p.id === line.paylineId);
       if (!payline) continue;
@@ -40,9 +48,69 @@ export default function SlotMachine() {
     return map;
   }, [winInfo]);
 
+  // Gewonnene Paylines für leuchtende Linien
+  const winningPaylineIds = useMemo(() => {
+    if (!winInfo?.winningLines?.length) return new Set();
+    return new Set(winInfo.winningLines.map((l) => l.paylineId));
+  }, [winInfo]);
+
   return (
     <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-col items-center px-4 py-8">
-      {/* ... Titel + Freispiele-Banner + Stat-Leiste bleiben unverändert ... */}
+      {/* Titel */}
+      <div className="mb-6 text-center">
+        <h1
+          className="text-4xl font-black tracking-tight sm:text-6xl"
+          style={{
+            background: 'linear-gradient(180deg, #fff4d1 0%, #ffb347 45%, #ff5a1f 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 4px 12px rgba(255,80,20,0.5))',
+          }}
+        >
+          JOKER FIRE FRENZY
+        </h1>
+        <p className="mt-1 text-xs font-medium tracking-[0.3em] text-amber-300/70">
+          DREHE · FINDE · GEWINNE
+        </p>
+      </div>
+
+      {/* Freispiele-Banner */}
+      <AnimatePresence>
+        {inFreeSpins && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.9 }}
+            className="mb-4 w-full"
+          >
+            <div
+              className="flex items-center justify-center gap-3 rounded-2xl px-5 py-2"
+              style={{
+                background: 'linear-gradient(90deg, #7c1d1d 0%, #ff5a1f 50%, #7c1d1d 100%)',
+                boxShadow: '0 0 24px #ff5a1f88, inset 0 0 12px rgba(0,0,0,0.4)',
+              }}
+            >
+              <Flame className="h-5 w-5 text-amber-100" />
+              <div className="text-center">
+                <div className="text-[10px] font-bold tracking-[0.3em] text-amber-100/80">
+                  FREISPIELE
+                </div>
+                <div className="text-lg font-black text-white">
+                  {freeSpins} verbleibend · ×{FREE_SPINS_MULTIPLIER} MULTIPLIKATOR
+                </div>
+              </div>
+              <Flame className="h-5 w-5 text-amber-100" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Stat-Leiste */}
+      <div className="mb-4 grid w-full grid-cols-3 gap-2">
+        <Stat icon={<Coins className="h-4 w-4" />} label="GUTHABEN" value={`${balance.toLocaleString('de-DE')} ₵`} />
+        <Stat icon={<TrendingUp className="h-4 w-4" />} label="SPINS" value={stats.spins} />
+        <Stat icon={<Trophy className="h-4 w-4" />} label="TOP-GEWINN" value={`${stats.biggest.toLocaleString('de-DE')} ₵`} />
+      </div>
 
       {/* Walzenfenster */}
       <div
@@ -53,19 +121,63 @@ export default function SlotMachine() {
             '0 0 0 3px #b8860b, 0 0 0 6px #5c3a0e, 0 24px 60px rgba(255,80,20,0.25), inset 0 0 40px rgba(0,0,0,0.6)',
         }}
       >
-        {/* Alte einzelne Payline-Linie kann man optional entfernen oder behalten */}
-        <div
-          className="pointer-events-none absolute left-3 right-3 top-1/2 z-20 -translate-y-1/2 rounded-full"
-          style={{
-            height: 2,
-            background:
-              'linear-gradient(90deg, transparent, #ff3b3b 20%, #ffd700 50%, #ff3b3b 80%, transparent)',
-            opacity: spinning ? 0.3 : 0.5,
-            boxShadow: '0 0 12px #ff3b3b',
-          }}
-        />
+        {/* ✨ Leuchtende Gewinnlinien (SVG Overlay) */}
+        {!spinning && winningPaylineIds.size > 0 && (
+          <svg
+            className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            {PAYLINES.filter((p) => winningPaylineIds.has(p.id)).map((payline) => {
+              const points = payline.cells
+                .map(([reel, row]) => {
+                  const pos = CELL_POS[reel][row];
+                  return `\( {pos.x}, \){pos.y}`;
+                })
+                .join(' ');
+              return (
+                <g key={payline.id}>
+                  {/* Glow */}
+                  <polyline
+                    points={points}
+                    fill="none"
+                    stroke="#ffd700"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity="0.35"
+                    style={{ filter: 'blur(3px)' }}
+                  />
+                  {/* Hauptlinie */}
+                  <polyline
+                    points={points}
+                    fill="none"
+                    stroke="url(#winGradient)"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <animate
+                      attributeName="opacity"
+                      values="0.7;1;0.7"
+                      dur="1.2s"
+                      repeatCount="indefinite"
+                    />
+                  </polyline>
+                </g>
+              );
+            })}
+            <defs>
+              <linearGradient id="winGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#ff3b3b" />
+                <stop offset="50%" stopColor="#ffd700" />
+                <stop offset="100%" stopColor="#ff3b3b" />
+              </linearGradient>
+            </defs>
+          </svg>
+        )}
 
-        <div className="flex justify-center gap-2 sm:gap-3">
+        <div className="relative z-10 flex justify-center gap-2 sm:gap-3">
           {grid.map((reel, i) => (
             <Reel
               key={i}
@@ -77,7 +189,7 @@ export default function SlotMachine() {
           ))}
         </div>
 
-        {/* ✨ NEUE Gewinn-Anzeige (multi-payline kompatibel) */}
+        {/* Gewinn-Anzeige */}
         <AnimatePresence>
           {winInfo && !spinning && (
             <motion.div
@@ -113,9 +225,84 @@ export default function SlotMachine() {
         </AnimatePresence>
       </div>
 
-      {/* ... Einsatz + Spin + Buttons bleiben unverändert ... */}
+      {/* Einsatz + Spin */}
+      <div className="mt-6 flex w-full flex-col items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold tracking-widest text-amber-300/70">EINSATZ</span>
+          {BET_OPTIONS.map((b) => (
+            <button
+              key={b}
+              onClick={() => changeBet(b)}
+              disabled={spinning}
+              className={`h-9 min-w-[2.5rem] rounded-lg px-2 text-sm font-bold transition-all disabled:opacity-40 ${
+                bet === b
+                  ? 'bg-gradient-to-b from-amber-300 to-amber-500 text-black shadow-[0_0_14px_#ffb347]'
+                  : 'bg-black/40 text-amber-200/70 hover:bg-black/60'
+              }`}
+            >
+              {b}
+            </button>
+          ))}
+        </div>
 
-      {/* Gewinntabelle-Panel – Text aktualisieren */}
+        <button
+          onClick={spin}
+          disabled={!canSpin}
+          className="group relative h-20 w-20 rounded-full disabled:cursor-not-allowed"
+          style={{
+            background: canSpin
+              ? 'radial-gradient(circle at 50% 35%, #ffe98a 0%, #ff7a1a 55%, #c1272d 100%)'
+              : 'radial-gradient(circle at 50% 35%, #555 0%, #222 100%)',
+            boxShadow: canSpin
+              ? '0 0 30px #ff6a1a, 0 8px 20px rgba(0,0,0,0.5), inset 0 -4px 8px rgba(0,0,0,0.4)'
+              : 'inset 0 0 12px rgba(0,0,0,0.6)',
+          }}
+        >
+          <motion.span
+            className="flex flex-col items-center justify-center text-black"
+            animate={spinning ? { rotate: 360 } : {}}
+            transition={spinning ? { duration: 0.8, repeat: Infinity, ease: 'linear' } : {}}
+          >
+            <Flame className="h-7 w-7" />
+            <span className="text-[10px] font-black tracking-widest">
+              {spinning ? 'SPIN' : 'DREHEN'}
+            </span>
+          </motion.span>
+        </button>
+
+        <div className="flex flex-wrap items-center justify-center gap-2 text-xs">
+          <button
+            onClick={buyFreeSpins}
+            disabled={!canBuy}
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: canBuy
+                ? 'linear-gradient(90deg, #7c1d1d, #ff5a1f, #7c1d1d)'
+                : 'rgba(0,0,0,0.4)',
+              boxShadow: canBuy ? '0 0 16px #ff5a1f88' : 'none',
+            }}
+          >
+            <Zap className="h-3.5 w-3.5 text-amber-100" />
+            <span className="text-amber-100">Freispiele kaufen · {buyCost.toLocaleString('de-DE')} ₵</span>
+          </button>
+          <button
+            onClick={() => setShowPaytable((v) => !v)}
+            className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-black/40 px-3 py-1.5 text-amber-200/80 hover:bg-black/60"
+          >
+            <Info className="h-3.5 w-3.5" /> Gewinntabelle
+          </button>
+          {balance < bet && (
+            <button
+              onClick={resetBalance}
+              className="flex items-center gap-1 rounded-full border border-red-500/40 bg-red-950/40 px-3 py-1.5 text-red-200 hover:bg-red-900/40"
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Guthaben zurücksetzen
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Gewinntabelle */}
       <AnimatePresence>
         {showPaytable && (
           <motion.div
@@ -145,7 +332,6 @@ export default function SlotMachine() {
   );
 }
 
-// Stat-Komponente bleibt unverändert
 function Stat({ icon, label, value }) {
   return (
     <div className="flex flex-col items-center rounded-xl border border-amber-500/15 bg-black/40 px-2 py-2">
@@ -156,4 +342,4 @@ function Stat({ icon, label, value }) {
       <div className="text-sm font-black text-amber-200">{value}</div>
     </div>
   );
-}
+}                                                                    }

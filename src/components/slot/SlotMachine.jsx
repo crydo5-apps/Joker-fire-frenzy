@@ -1,15 +1,16 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, RotateCcw, Info, X, Coins, TrendingUp, Trophy, Zap } from 'lucide-react';
-import { useSlotGame } from '@/lib/useSlotGame';
+import { Flame, RotateCcw, Info, X, Coins, TrendingUp, Trophy, Zap, Gauge, Play, Square } from 'lucide-react';
 import {
   BET_OPTIONS,
   REEL_DELAYS,
+  REEL_DELAYS_TURBO,
   FREE_SPINS_AWARD,
   FREE_SPINS_MULTIPLIER,
   BUY_FEATURE_MULTIPLIER,
   PAYLINES,
 } from '@/lib/slotConfig';
+import { useSlotGame } from '@/lib/useSlotGame'
 import Reel from './Reel';
 import Paytable from './Paytable';
 
@@ -24,9 +25,10 @@ const CELL_POS = {
 
 export default function SlotMachine() {
   const {
-    balance, bet, changeBet, grid, spinning, lastWin, winInfo, stats, spin, resetBalance,
-    freeSpins, buyFreeSpins,
-  } = useSlotGame();
+  balance, bet, changeBet, grid, spinning, lastWin, winInfo, stats, spin, resetBalance,
+  freeSpins, buyFreeSpins,
+  turbo, toggleTurbo, autoPlay, toggleAutoPlay,
+} = useSlotGame();
   const [showPaytable, setShowPaytable] = useState(false);
   const inFreeSpins = freeSpins > 0;
 

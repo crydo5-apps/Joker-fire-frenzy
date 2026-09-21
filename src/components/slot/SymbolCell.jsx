@@ -1,13 +1,17 @@
 import { motion } from 'framer-motion';
 import { Image } from '@/components/ui/image';
+import { SPIN_BLUR_IMAGE } from '@/lib/slotConfig';
 
-// Eine einzelne Symbolzelle auf einer Walze
 export default function SymbolCell({ symbol, highlight, useIcon }) {
+  // Während dem Drehen: immer das Spin-Symbol
+  const showSpinImage = useIcon && SPIN_BLUR_IMAGE;
+  const showSymbolImage = !useIcon && symbol.image;
+
   return (
     <div
       className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl sm:h-28 sm:w-28"
       style={{
-        background: symbol.image
+        background: showSpinImage || showSymbolImage
           ? 'transparent'
           : 'linear-gradient(180deg, rgba(20,8,4,0.9) 0%, rgba(40,16,8,0.9) 100%)',
         boxShadow: highlight
@@ -16,7 +20,14 @@ export default function SymbolCell({ symbol, highlight, useIcon }) {
         transition: 'box-shadow 0.3s ease',
       }}
     >
-      {symbol.image && !useIcon ? (
+      {showSpinImage ? (
+        <Image
+          src={SPIN_BLUR_IMAGE}
+          alt="spin"
+          fittingType="fit"
+          className="h-full w-full"
+        />
+      ) : showSymbolImage ? (
         <Image
           src={symbol.image}
           alt={symbol.label}
